@@ -1,0 +1,93 @@
+load_file("nrngui.hoc")
+load_file("./_morph/2013_03_06_cell03_789_H41_03.hoc")
+load_file("./biophys.hoc")
+load_file("./syns.hoc")
+load_file("./plots.hoc")
+
+objref apc
+
+proc add_dcaap(){local dcaap_loc,dcaap_w
+	dcaap_loc = $1
+	insert dCaAP
+	pl_dcaap = new TPointList()
+	pl_dcaap.append(dcaap_loc) 
+	vth_dCaAP(dcaap_loc) = -36
+	D_dCaAP(dcaap_loc) = 0.3
+	vrest_dCaAP(dcaap_loc) = -75
+	refract_period_dCaAP(dcaap_loc) = 200
+	sigma_diff_dCaAP(dcaap_loc) = 21
+	tauA_dCaAP(dcaap_loc) = 3
+	tauB_dCaAP(dcaap_loc) = 0.4
+	w_dCaAP(dcaap_loc) = (dcaap_w = $2) //Adjusting the dCaAP weight manually.
+}
+
+proc set_pathways_combination(){local pathwayX,pathwayY,subdomain_inhibition,distal_inhibition,proximal_inhibition,background_excitation
+	initialize_pathways()//initialize
+	dur=30000
+	delay=100
+	syn_freq_Hz=1
+	if(bg=0){add_syns(plex_bg,syns,tplay,syn_freq_Hz,delay,dur,ampa=1,nmda=1,basket=0,martinotti=0) printf("background\n")}
+	if(pathwayX=$1){add_syns(plex_X,syns,tplay,syn_freq_Hz,delay,dur,ampa=1,nmda=1,basket=0,martinotti=0) printf("pathway X\n")}
+	if(pathwayY=$2){add_syns(plex_Y,syns,tplay,syn_freq_Hz,delay,dur,ampa=1,nmda=1,basket=0,martinotti=0) printf("pathway Y\n")}
+}
+
+//to init use a context of a section
+proc init_sim(){local dcaap_loc,dcaap_w
+	biophys()
+	init(v_init = -75) 
+	forsec "apic"{
+	add_dcaap(dcaap_loc = $1,dcaap_w = $2)
+	}
+	soma apc = new APCount(0.5)
+	apc.thresh = 0
+}
+
+proc activate_pathways(){localobj pathway
+	pathway = new TString($s1)
+	if(pathway.equal("X")) set_pathways_combination(1,0,0,0,0,1)
+	if(pathway.equal("Y")) set_pathways_combination(0,1,0,0,0,1)	
+	if(pathway.equal("XY")) set_pathways_combination(1,1,0,0,0,3)
+}
+
+
+objref dendv, somav
+dendv = new Vector()
+somav = new Vector()
+
+strdef tmpstr
+strdef outDir
+strdef cmd 
+objref outfile
+outfile = new File()
+
+sprint(outDir,"simdata\\\\spiny_ampa_nmda_dcaspk")
+sprint(cmd, "system(\"mkdir %s\")",outDir)
+execute(cmd)
+
+	napic = 400
+	apic[47]{
+		tstop = 1000
+		init_points(syns_bg=0,syns_group1=napic,syns_group2=napic,syns_inh_distal=0,syns_inh_proximal=0)
+		init_sim(dcaap_loc = 0.214,dcaap_w = 1.6)	
+		activate_pathways("X",is_coupled = 0)
+//		init_plots(dcaap_loc)
+		dendv = new Vector()		
+		dendv.record(&apic[47].v(0.5))
+		
+		somav = new Vector()
+		somav.record(&soma.v(0.5))
+
+		run()
+		
+		sprint(tmpstr,"%s/X_vsoma.dat",outDir)
+		outfile.wopen(tmpstr)
+		somav.printf(outfile)
+		outfile.close()
+		
+		sprint(tmpstr,"%s/X_vdend.dat",outDir)
+		outfile.wopen(tmpstr)
+		dendv.printf(outfile)
+		outfile.close()
+
+		}
+
