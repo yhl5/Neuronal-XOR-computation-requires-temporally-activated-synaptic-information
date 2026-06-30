@@ -1,7 +1,0 @@
-# actually I should move all the files to the previous folder
-mpirun -n 1 nrniv -mpi mymodel_spiny_ampa.hoc
-mpirun -n 1 nrniv -mpi mymodel_aspiny_ampa.hoc
-mpirun -n 1 nrniv -mpi mymodel_spiny_ampa_nmda.hoc
-mpirun -n 1 nrniv -mpi mymodel_aspiny_ampa_nmda.hoc
-mpirun -n 1 nrniv -mpi mymodel_spiny_ampa_nmda_dcaspk.hoc
-mpirun -n 1 nrniv -mpi mymodel_aspiny_ampa_nmda_dcaspk.hoc
